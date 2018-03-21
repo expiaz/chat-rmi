@@ -1,6 +1,6 @@
 package database;
 
-import shared.Database;
+import shared.stub.Database;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;

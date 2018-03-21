@@ -2,7 +2,7 @@ package database;
 
 import database.model.Conversation;
 import database.model.User;
-import shared.Database;
+import shared.stub.Database;
 
 import java.rmi.RemoteException;
 import java.util.*;

@@ -1,4 +1,4 @@
-package shared;
+package shared.stub;
 
 import database.model.Conversation;
 import database.model.User;
