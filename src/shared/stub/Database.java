@@ -11,16 +11,18 @@ import java.util.List;
 
 public interface Database extends Remote, Serializable {
 
-    Collection<User> getUsers() throws RemoteException;
+    User[] getUsers() throws RemoteException;
 
     User getUser(int id) throws RemoteException;
 
-    void setUser(User user) throws RemoteException;
+    void addUser(User user) throws RemoteException;
+
+    void addUser(String login, String pwd) throws RemoteException;
 
     Conversation getConversation(List<User> users) throws RemoteException;
 
     Conversation getConversation(Integer[] ids) throws RemoteException;
 
-    void setConversation(Conversation conversation) throws RemoteException;
+    void addConversation(Conversation conversation) throws RemoteException;
 
 }
