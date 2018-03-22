@@ -37,8 +37,8 @@ public class DatabaseImpl implements Database {
     }
 
     @Override
-    public Collection<User> getUsers() {
-        return this.users.values();
+    public User[] getUsers() {
+        return this.users.values().toArray(new User[this.users.size()]);
     }
 
     @Override
@@ -52,8 +52,8 @@ public class DatabaseImpl implements Database {
     }
 
     @Override
-    public Conversation getConversation(List<User> users) throws RemoteException {
-        return this.getConversation((Integer[]) users.stream().map(user -> user.getId()).toArray());
+    public Conversation getConversation(User[] users) throws RemoteException {
+        return this.getConversation((Integer[]) Arrays.stream(users).map(user -> user.getId()).toArray());
     }
 
     public Conversation getConversation(Integer[] ids) throws RemoteException {

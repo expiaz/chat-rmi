@@ -1,6 +1,5 @@
 package server;
 
-import database.model.Conversation;
 import database.model.Message;
 import database.model.User;
 import shared.payload.xml.Connexion;
@@ -9,137 +8,120 @@ import shared.payload.xml.FriendList;
 import shared.payload.xml.SearchResults;
 import shared.stub.Database;
 
-import javax.jws.WebService;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.xml.bind.JAXBElement;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.*;
 
-@WebService(serviceName = "server", portName = "8080")
 @Path("/")
-public class ServerHttp /*implements Server*/
-{
-	private Database database;
+public class ServerHttp {
 
-	private Map<String, User> tokens;
+    private ServerImpl server;
+    private Database database;
 
-	private Map<String, server.Client> clients;
-	private Set<server.Conversation> conversations;
+    public ServerHttp() {
+        System.out.println("__ServerHttp__");
+        this.server = ServerImpl.getInstance();
+        this.database = this.server.getDatabase();
+    }
 
-	public ServerHttp()
-	{
-	    this.tokens = new HashMap<>();
-	    this.clients = new HashMap<>();
-	    this.conversations = new HashSet<>();
+    @GET
+    @Path("test")
+    public Response test() {
+        User[] users;
+        try {
+            users = this.database.getUsers();
+            StringBuilder body = new StringBuilder("<ul>");
+            for (User user : users) {
+                body.append("<li>");
+                body.append(user.getLogin());
+                body.append("</li>");
+            }
+            body.append("</ul>");
+            return Response.status(200).type(MediaType.TEXT_HTML_TYPE).entity(body.toString()).build();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
 
-		try {
-			this.database = (Database) Naming.lookup("rmi://127.0.0.1:2000/Database");
-			User a = this.database.getUser(1);
-			System.out.println(a);
-		} catch (Exception e) {
-			System.out.println("Database not found");
-		}
-
-		/*try {
-			ServerHttp server = new ServerHttp();
-			Server stub = (Server) UnicastRemoteObject.exportObject(server, 0);
-			Registry registry = LocateRegistry.getRegistry(2000);
-			registry.bind("Server", stub);
-		} catch (Exception e) {
-			System.out.println("Server cannot be created");
-		}*/
-	}
+        return Response.serverError().build();
+    }
 
     @POST
     @Path("subscribe")
-    public Response subscribe(@FormParam("login") String login, @FormParam("password") String pwd)
-    {
-		Collection<User> users;
-		try {
-			users = this.database.getUsers();
-		} catch (RemoteException e) {
-			return Response
+    public Response subscribe(@FormParam("login") String login, @FormParam("password") String pwd) {
+        User[] users;
+        try {
+            users = this.database.getUsers();
+        } catch (RemoteException e) {
+            return Response
                     .serverError()
                     .entity("Failed to fetch users")
                     .build();
-		}
+        }
 
-		for(User user : users) {
-			if (user.getLogin().equals(login)) {
-			    return Response
+        for (User user : users) {
+            if (user.getLogin().equals(login)) {
+                return Response
                         .status(Response.Status.BAD_REQUEST)
                         .entity("Name " + login + " is already taken")
                         .build();
             }
-		}
+        }
 
-		try {
+		/*try {
             this.database.addUser(login, pwd);
         } catch (RemoteException e) {
             return Response
                     .serverError()
                     .entity("Failed to insert user")
                     .build();
-        }
+        }*/
 
         return Response
                 .ok()
                 .build();
     }
 
-	@POST
-	@Path("connexion")
-	public Response connexion(@FormParam("login") String login, @FormParam("password") String pwd)
-	{
-        Collection<User> users;
-	    try {
-	       users = this.database.getUsers();
+    @POST
+    @Path("connexion")
+    public Response connexion(@FormParam("login") String login, @FormParam("password") String pwd) {
+        User[] users;
+        try {
+            users = this.server.getDatabase().getUsers();
         } catch (RemoteException e) {
-	        return Response
+            return Response
                     .serverError()
                     .entity("Can't connect to Database")
                     .build();
         }
 
-		for(User user : users) {
-			if (user.getLogin().equals(login) && user.getPwd().equals(pwd)) {
-                UUID uid = UUID.randomUUID();
-                this.tokens.put(uid.toString(), user);
+        for (User user : users) {
+            if (user.getLogin().equals(login) && user.getPwd().equals(pwd)) {
+
+                String token = this.server.authenticate(user);
 
                 Connexion payload = new Connexion();
                 payload.login = user.getLogin();
-                payload.token = uid.toString();
+                payload.token = token;
                 payload.friends = new FriendList();
 
                 return Response
-                        .ok(payload, MediaType.APPLICATION_XML)
-                        .build();
-			}
-		}
+                    .ok(payload, MediaType.APPLICATION_XML)
+                    .build();
+            }
+        }
 
         return Response
                 .status(Response.Status.NOT_FOUND)
                 .entity("Bad credentials")
                 .build();
-	}
+    }
 
-/*    public boolean register(String token, shared.stub.Client client)
-    {
-        if (!this.tokens.containsKey(token)) {
-            return false;
-        }
-        User user = this.tokens.get(token);
-        this.tokens.remove(token);
-        this.clients.put(token, new Client(token, user, client));
-        return true;
-    }*/
-
-	@POST
-	@Path("message")
-	public Response sendMessage(
-	        @HeaderParam(HttpHeaders.AUTHORIZATION) String token,
+    @POST
+    @Path("message")
+    public Response sendMessage(
+            @HeaderParam(HttpHeaders.AUTHORIZATION) String token,
             String body
     ) {
         if (body.length() == 0) {
@@ -148,63 +130,81 @@ public class ServerHttp /*implements Server*/
                     .entity("Body is empty")
                     .build();
         }
-		if (body.length() > 140) {
-			body = body.substring(0, 140);
-		}
+        if (body.length() > 140) {
+            body = body.substring(0, 140);
+        }
 
-		if (!this.clients.containsKey(token)) {
+        Client client = this.server.exists(token);
+        if (client == null) {
             return Response
                     .status(Response.Status.BAD_REQUEST)
                     .entity("Token doesn't exists")
                     .build();
         }
 
-		server.Client from = this.clients.get(token);
-		Message message = new Message(from.getModel(), body, new Date());
-
-		// this.database.addMessage(client.getConversation(), m);
-
-        if(! from.getConversation().sendMessage(message)) {
+        if (client.getConversation() == null) {
             return Response
-                    .serverError()
+                    .status(Response.Status.BAD_REQUEST)
+                    .entity("Not in a conversation")
                     .build();
         }
-		return Response
+
+        Message message = new Message(client.getModel(), body, new Date());
+
+        // this.database.addMessage(client.getConversation(), m);
+
+        if (!client.getConversation().sendMessage(message)) {
+            return Response
+                    .serverError()
+                    .entity("Failed to send message")
+                    .build();
+        }
+
+        return Response
                 .ok()
                 .build();
-	}
+    }
 
-	@GET
-	@Path("contact/search/{login}")
-	@Produces(MediaType.APPLICATION_XML)
-	public Response searchContact(
+    @GET
+    @Path("contact/search/{login}")
+    public Response searchContact(
             @HeaderParam(HttpHeaders.AUTHORIZATION) String token,
             @PathParam("login") String search
     ) {
-	    Collection<ContactCard> found = new ArrayList<>();
-        Collection<User> users;
+        Collection<ContactCard> found = new ArrayList<>();
+        User[] users;
         try {
             users = this.database.getUsers();
         } catch (RemoteException e) {
-            return Response.serverError().build();
+            return Response
+                    .serverError()
+                    .entity("Can't connect to Database")
+                    .build();
         }
 
-        Client from = this.clients.get(token);
-        Set<User> contacts = from.getModel().getContacts();
-		for (User user: users) {
-		    if (!contacts.contains(user) && user.getLogin().matches(search)) {
-		        found.add(new ContactCard(user.getLogin(), false, false));
+        Client client = this.server.exists(token);
+        if (client == null) {
+            return Response
+                    .status(Response.Status.BAD_REQUEST)
+                    .entity("Token doesn't exists")
+                    .build();
+        }
+
+        Set<User> contacts = client.getModel().getContacts();
+        for (User user : users) {
+            if (!contacts.contains(user) && user.getLogin().matches(search)) {
+                found.add(new ContactCard(user.getLogin(), false, false));
             }
         }
 
         SearchResults results = new SearchResults();
-		results.results = found;
+        results.results = found;
         return Response
                 .ok(results, MediaType.APPLICATION_XML)
                 .build();
-	}
+    }
 
-	@POST
+    @POST
     @Path("conversation")
     @Consumes(MediaType.APPLICATION_XML)
     @Produces(MediaType.APPLICATION_XML)
@@ -212,15 +212,16 @@ public class ServerHttp /*implements Server*/
             @HeaderParam(HttpHeaders.AUTHORIZATION) String token,
             JAXBElement<shared.payload.xml.Conversation> p
     ) {
-
-
-
-        try {
+        /*try {
             shared.payload.xml.Conversation payload = p.getValue();
             Conversation conversation = this.database.getConversation(payload.logins);
 
         } catch (Exception e) {
 
-        }
+        }*/
+
+        return Response
+                .ok()
+                .build();
     }
 }
