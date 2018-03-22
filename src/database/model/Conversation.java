@@ -1,11 +1,8 @@
 package database.model;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.List;
 
-@XmlRootElement(name = "conversation")
 public class Conversation {
 
     private List<User> users;
@@ -19,7 +16,6 @@ public class Conversation {
         this.messages = new ArrayList<>();
     }
 
-    @XmlElement
     public List<User> getUsers() {
         return users;
     }
@@ -28,7 +24,6 @@ public class Conversation {
         return name;
     }
 
-    @XmlElement
     public List<Message> getMessages() {
         return messages;
     }

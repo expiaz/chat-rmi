@@ -6,8 +6,6 @@ import database.model.User;
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.Collection;
-import java.util.List;
 
 public interface Database extends Remote, Serializable {
 
@@ -19,7 +17,7 @@ public interface Database extends Remote, Serializable {
 
     void addUser(String login, String pwd) throws RemoteException;
 
-    Conversation getConversation(List<User> users) throws RemoteException;
+    Conversation getConversation(User[] users) throws RemoteException;
 
     Conversation getConversation(Integer[] ids) throws RemoteException;
 

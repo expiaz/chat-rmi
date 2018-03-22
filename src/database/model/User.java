@@ -1,15 +1,10 @@
 package database.model;
 
-import com.sun.xml.internal.txw2.annotation.XmlElement;
-
-import javax.xml.bind.annotation.XmlRootElement;
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-@XmlRootElement(name = "user")
-public class User {
+public class User implements Serializable {
 
     private int id;
     private String login;
@@ -46,7 +41,6 @@ public class User {
         return pwd;
     }
 
-    @XmlElement
     public Set<User> getContacts() {
         return contacts;
     }

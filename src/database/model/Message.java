@@ -1,9 +1,7 @@
 package database.model;
 
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Date;
 
-@XmlRootElement(name = "message")
 public class Message {
 
     private User from;

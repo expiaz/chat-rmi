@@ -11,7 +11,7 @@ import java.util.*;
 public class DatabaseImpl implements Database {
 
     private Map<Integer, User> users;
-    private Map<Object[], Conversation> conversations;
+    private Map<Integer[], Conversation> conversations;
 
     public DatabaseImpl() {
         this.users = new HashMap<>();
@@ -87,12 +87,16 @@ public class DatabaseImpl implements Database {
         this.addUser(new User(this.users.size()+1, login, pwd));
     }
 
-    @Override
-    public Conversation getConversation(List<User> users) throws RemoteException {
-        return this.getConversation((Integer[]) users.stream().map(user -> user.getId()).toArray());
+    public Conversation getConversation(User[] users) throws RemoteException {
+        return this.getConversation((Integer[]) Arrays.stream(users).map(user -> user.getId()).toArray());
     }
 
     public Conversation getConversation(Integer[] ids) throws RemoteException {
+        /*Object[] tab = Arrays.stream(ids).sorted(Integer::compareTo).toArray();
+        for (Object id :
+                tab) {
+            System.out.println(id);
+        }*/
         Conversation conversation = this.conversations.get(Arrays.stream(ids).sorted(Integer::compareTo).toArray());
         if (conversation == null){
             ArrayList users = new ArrayList();
@@ -107,15 +111,16 @@ public class DatabaseImpl implements Database {
     @Override
     public void addConversation(Conversation conversation) throws RemoteException {
         /*Conversation put = this.conversations.put(
-                (Integer[]) conversation.getUsers().stream().map(user -> user.getId()).sorted(Integer::compareTo).toArray(new Integer(conversation.getUsers().size())),
+                (Integer[]) conversation.getUsers().stream().map(user -> user.getId()).sorted(Integer::compareTo).toArray(),
                 conversation
         );*/
 
         User[] users = conversation.getUsers().toArray(new User[conversation.getUsers().size()]);
         Integer[] k = new Integer[conversation.getUsers().size()];
-        for(int i=0; i<conversation.getUsers().size(); i++){
+        for(int i=0; i<users.length; i++){
             k[i] = users[i].getId();
         }
-        Conversation put = this.conversations.put(Arrays.stream(k).sorted(Integer::compareTo).toArray(), conversation);
+        Arrays.sort(k);
+        this.conversations.put(k, conversation);
     }
 }
