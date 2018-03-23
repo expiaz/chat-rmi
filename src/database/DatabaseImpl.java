@@ -7,6 +7,7 @@ import shared.stub.Database;
 
 import java.rmi.RemoteException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DatabaseImpl implements Database {
 
@@ -97,13 +98,15 @@ public class DatabaseImpl implements Database {
                 tab) {
             System.out.println(id);
         }*/
-        Conversation conversation = this.conversations.get(Arrays.asList(Arrays.stream(ids).sorted(Integer::compareTo).toArray()));
+        List<Integer> id = Arrays.stream(ids).sorted(Integer::compareTo).collect(Collectors.toList());
+        Conversation conversation = this.conversations.get(id);
         if (conversation == null){
             ArrayList users = new ArrayList();
-            for (int i=0; i<ids.length; i++){
-                users.add(this.getUser(ids[i]));
+            for(int i : ids) {
+                users.add(this.getUser(i));
             }
-            conversation = new Conversation(users, "Nouvelle conversation");
+            conversation = new Conversation(users, "Conversation Nouvelle");
+            this.conversations.put(id, conversation);
         }
         return conversation;
     }

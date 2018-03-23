@@ -8,6 +8,12 @@ public class Connexion {
 
     public String login;
     public String token;
+
+    @XmlElement
     public FriendList friends;
+
+    public Connexion() {
+
+    }
 
 }

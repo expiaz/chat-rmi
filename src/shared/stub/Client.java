@@ -1,6 +1,6 @@
 package shared.stub;
 
-import shared.payload.rmi.Conversation;
+import shared.payload.xml.Conversation;
 
 import java.io.Serializable;
 import java.rmi.Remote;

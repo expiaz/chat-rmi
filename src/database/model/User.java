@@ -9,19 +9,19 @@ public class User implements Serializable {
     private int id;
     private String login;
     private String pwd;
-    private Set<User> contacts;
+    private HashSet<User> contacts;
 
-    private Set<User> friendRequests;
+    private HashSet<User> friendRequests;
 
     public User(int id, String login, String pwd) {
         this(id, login, pwd, new HashSet<>(), new HashSet<>());
     }
 
-    public User(int id, String login, String pwd, Set<User> contacts) {
+    public User(int id, String login, String pwd, HashSet<User> contacts) {
         this(id, login, pwd, contacts, new HashSet<>());
     }
 
-    public User(int id, String login, String pwd, Set<User> contacts, Set<User> pending) {
+    public User(int id, String login, String pwd, HashSet<User> contacts, HashSet<User> pending) {
         this.id = id;
         this.login = login;
         this.pwd = pwd;
@@ -41,7 +41,7 @@ public class User implements Serializable {
         return pwd;
     }
 
-    public Set<User> getContacts() {
+    public HashSet<User> getContacts() {
         return contacts;
     }
 

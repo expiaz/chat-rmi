@@ -9,6 +9,10 @@ public class ContactCard {
     public boolean connected;
     public boolean busy;
 
+    public ContactCard() {
+
+    }
+
     public ContactCard(String login, boolean connected, boolean busy)
     {
         this.login = login;

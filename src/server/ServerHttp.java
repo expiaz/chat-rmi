@@ -1,5 +1,6 @@
 package server;
 
+import database.model.Conversation;
 import database.model.Message;
 import database.model.User;
 import shared.payload.xml.Connexion;
@@ -13,6 +14,7 @@ import javax.ws.rs.core.*;
 import javax.xml.bind.JAXBElement;
 import java.rmi.RemoteException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Path("/")
 public class ServerHttp {
@@ -84,7 +86,7 @@ public class ServerHttp {
     }
 
     @POST
-    @Path("connexion")
+    @Path("login")
     public Response connexion(@FormParam("login") String login, @FormParam("password") String pwd) {
         User[] users;
         try {
@@ -96,6 +98,8 @@ public class ServerHttp {
                     .build();
         }
 
+        System.out.println("__connexion__ " + login + " " + pwd);
+
         for (User user : users) {
             if (user.getLogin().equals(login) && user.getPwd().equals(pwd)) {
 
@@ -105,6 +109,18 @@ public class ServerHttp {
                 payload.login = user.getLogin();
                 payload.token = token;
                 payload.friends = new FriendList();
+
+                for (Client client : this.server.getClients().values()) {
+                    for (User contact : user.getContacts()) {
+                        if (client.getModel().getId() == contact.getId()) {
+                            payload.friends.friends.add(new ContactCard(
+                                    contact.getLogin(),
+                                    true,
+                                    client.getConversation() != null
+                            ));
+                        }
+                    }
+                }
 
                 return Response
                     .ok(payload, MediaType.APPLICATION_XML)
@@ -206,22 +222,57 @@ public class ServerHttp {
 
     @POST
     @Path("conversation")
-    @Consumes(MediaType.APPLICATION_XML)
-    @Produces(MediaType.APPLICATION_XML)
     public Response conversation(
             @HeaderParam(HttpHeaders.AUTHORIZATION) String token,
-            JAXBElement<shared.payload.xml.Conversation> p
+            String logins
     ) {
-        /*try {
-            shared.payload.xml.Conversation payload = p.getValue();
-            Conversation conversation = this.database.getConversation(payload.logins);
 
-        } catch (Exception e) {
+        Client client = this.server.exists(token);
+        if (client == null) {
+            return Response
+                    .status(Response.Status.BAD_REQUEST)
+                    .entity("Token doesn't exists")
+                    .build();
+        }
 
-        }*/
+        Collection<Integer> ids = new ArrayList<>();
+        ids.add(client.getModel().getId());
+
+        Collection<Client> clients = this.server.getClients().values();
+        for(String login : logins.split(" ")) {
+            for(Client c : clients) {
+                if (c.getModel().getLogin().equals(login)) {
+                    if (c.getConversation() != null) {
+                        return Response
+                                .status(Response.Status.BAD_REQUEST)
+                                .entity("User " + login + " is busy")
+                                .build();
+                    }
+                    ids.add(client.getModel().getId());
+                }
+            }
+        }
+
+        Conversation conversation;
+        try {
+            conversation = this.database.getConversation(ids.toArray(new Integer[ids.size()]));
+        } catch (RemoteException e) {
+            return Response
+                    .serverError()
+                    .entity("Can't retrieve conversation")
+                    .build();
+        }
+
+        shared.payload.xml.Conversation transformedConv = new shared.payload.xml.Conversation(
+                conversation.getName(),
+                (ArrayList<String>) conversation.getMessages().stream()
+                        .sorted(Comparator.comparing(a -> a.getTimestamp()))
+                        .map(message -> "[" + message.getFrom() + "] " + message.getBody())
+                        .collect(Collectors.toList())
+        );
 
         return Response
-                .ok()
+                .ok(transformedConv, MediaType.APPLICATION_XML)
                 .build();
     }
 }

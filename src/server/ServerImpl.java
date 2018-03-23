@@ -104,7 +104,7 @@ public class ServerImpl implements Server {
      * @return
      */
     public String authenticate(User user) {
-        String token = UUID.fromString(user.getLogin()).toString();
+        String token = UUID.randomUUID().toString();
         this.tokens.put(token, user);
         return token;
     }
@@ -129,5 +129,9 @@ public class ServerImpl implements Server {
      */
     public Database getDatabase() {
         return database;
+    }
+
+    public Map<String, Client> getClients() {
+        return clients;
     }
 }
