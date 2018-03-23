@@ -11,7 +11,7 @@ import java.util.*;
 public class DatabaseImpl implements Database {
 
     private Map<Integer, User> users;
-    private Map<Integer[], Conversation> conversations;
+    private Map<List<Integer>, Conversation> conversations;
 
     public DatabaseImpl() {
         this.users = new HashMap<>();
@@ -97,7 +97,7 @@ public class DatabaseImpl implements Database {
                 tab) {
             System.out.println(id);
         }*/
-        Conversation conversation = this.conversations.get(Arrays.stream(ids).sorted(Integer::compareTo).toArray());
+        Conversation conversation = this.conversations.get(Arrays.asList(Arrays.stream(ids).sorted(Integer::compareTo).toArray()));
         if (conversation == null){
             ArrayList users = new ArrayList();
             for (int i=0; i<ids.length; i++){
@@ -116,11 +116,11 @@ public class DatabaseImpl implements Database {
         );*/
 
         User[] users = conversation.getUsers().toArray(new User[conversation.getUsers().size()]);
-        Integer[] k = new Integer[conversation.getUsers().size()];
+        List<Integer> k = new ArrayList<>();
         for(int i=0; i<users.length; i++){
-            k[i] = users[i].getId();
+            k.add(users[i].getId());
         }
-        Arrays.sort(k);
+        k.sort(Integer::compareTo);
         this.conversations.put(k, conversation);
     }
 }

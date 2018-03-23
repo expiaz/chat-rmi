@@ -30,12 +30,12 @@ public class DbMain {
 			System.out.println("\ngetUser(1) - Resultat attendu : jeremy");
 			System.out.println(user.getLogin());
 
-			Integer[] ids = {3,2,1};
+			Integer[] ids = {1,2,3};
 			Conversation conversation = database.getConversation(ids);
 			System.out.println("\nConversation - Historique de conversation :");
 			System.out.println(conversation.getName());
 			for (Message message : conversation.getMessages()) {
-				System.out.println(message.getFrom() + " : " + message.getBody());
+				System.out.println(message.getFrom().getLogin() + " : " + message.getBody());
 			}
         } catch (RemoteException e) {
             e.printStackTrace();
